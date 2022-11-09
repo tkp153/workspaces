@@ -1,4 +1,5 @@
 import copy
+from pybboxes import BoundingBox
 
 import cv2
 from motpy import Detection,MultiObjectTracker
@@ -15,6 +16,7 @@ def main():
     
     predictor = Predictor()
     
+    
     while True:
         ret, frame = cap.read()
         if not ret: break
@@ -23,27 +25,46 @@ def main():
         pred, _, meta = predictor.numpy_image(frame)
         
         poses = []
-        bbox_s = []
-        scores = []
-        labels = []
         
         
         for p in pred:
             pose = p.json_data()
+            poses.append(pose)
+        bboxs =[]
+        score =[]
+        label = []
+        for p in poses:
+            my_coco_box = p['bbox']
+            scores = p['score']
+            labels = p['category_id']
+        
+            coco_bbox = BoundingBox.from_coco(*my_coco_box)
+            voc_bbox = coco_bbox.to_voc(return_values=True)
+            bboxs.append(voc_bbox)
+            score.append(scores)
+            label.append(labels)
+        print(bboxs)
+        print(len(bboxs[0]))
+        
+        
+        
+        '''
             bbox = pose['bbox']
             score = pose['score']
             label = pose['category_id']
-            
-            c_bbox = bbox_translation(bbox)
-            
-            bbox_s.append(c_bbox)
+            c_bbox = BoundingBox.from_coco(*bbox)
+            cc_box = c_bbox.to_voc()
+            bbox_s.append(cc_box)
             scores.append(score)
             labels.append(label)
+            print(bbox_s,scores,labels)
+        '''
+            
             
         #motpy_engine(debug_image,bbox_s,scores,labels)
-        print(bbox_s,scores,labels)
+        #print(bbox_s,scores,labels)
         #Prepare motpy
-        fps = 30
+        fps = 60
         tracker = MultiObjectTracker(
         dt=(1/fps),
         tracker_kwargs={'max_staleness':5},
@@ -62,23 +83,21 @@ def main():
     )
     
         track_id_dict ={}
-        boxes_a = bbox_s
-        scores_a = scores
-        labels_a = labels
     
         # motpy入力用のDetectionクラスにデータを設定する
-        detections =[
+        detection =[
         Detection(box = b ,score = s, class_id = l)
-        for b,s,l in zip(boxes_a,scores_a,labels_a)
+        for b,s,l in zip(bboxs,score,label)
         ]
     
-        _ = tracker.step(detections= detections)
-        track_results = tracker.active_tracks(min_steps_alive= 3)
+        _ = tracker.step(detections=detection)
+        track_results = tracker.active_tracks(min_steps_alive= 2)
     
         for track_results in track_results:
             if track_results.id not in track_id_dict:
                 new_id = len(track_id_dict)
                 track_id_dict[track_results.id] = new_id
+                print(new_id)
             
         debug_image = draw_debug(
             debug_image,
@@ -147,16 +166,7 @@ def motpy_engine(pic,d_box , d_score,d_label = 'person'):
     
     cv2.imshow('OpenPifPaf_tracker',debug_image)
             
-            
-def bbox_translation(bbox):
-    
-    xLow = bbox[0]
-    yLow = bbox[1] -bbox[3]
-    xHigh = bbox[0] + bbox[2]
-    yHigh = bbox[1]
-    
-    boxes = [xLow,yLow,xHigh,yHigh]
-    return boxes
+
 
 def draw_debug(
     image,
@@ -209,6 +219,24 @@ def get_id_color(index):
     )
     return color
 
+def data_analysis(poses):
+    bbox =[]
+    score =[]
+    label = []
+    for p in poses:
+        my_coco_box = p['bbox']
+        scores = p['score']
+        labels = p['category_id']
+        
+        coco_bbox = BoundingBox.from_coco(*my_coco_box)
+        voc_bbox = coco_bbox.to_voc(return_values=True)
+        bbox.append(voc_bbox)
+        score.append(scores)
+        label.append(labels)
+        
+    return bbox,score,label
+        
+        
 if __name__ == '__main__':
     main()
     
