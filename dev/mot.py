@@ -1,11 +1,8 @@
 import copy
-from pybboxes import BoundingBox
 import openpifpaf_voc as openpifpaf
 
 import cv2
 from motpy import Detection,MultiObjectTracker
-
-from openpifpaf.predictor import Predictor
 import numpy as np
 
 def get_id_color(index):
@@ -58,19 +55,19 @@ def draw_debug(image,track_results,track_id_dict):
     return debug_image
 
 # Video capture (Webcam)
-cap = cv2.VideoCapture('gettyimages-1310807192-640_adpp.mp4')
+cap = cv2.VideoCapture('re2.mp4')
 
 # Prepare Motpy
-fps = 30
+fps = cap.get(cv2.CAP_PROP_FPS)
 tracker = MultiObjectTracker(
     dt=(1 / fps),
-    tracker_kwargs={'max_staleness': 5},
+    tracker_kwargs={'max_staleness': 10},
     model_spec={
         'order_pos': 1,
         'dim_pos': 2,
         'order_size': 0,
         'dim_size': 2,
-        'q_var_pos': 5000.0,
+        'q_var_pos': 2500.0,
         'r_var_pos': 0.1
     },
     matching_fn_kwargs={
@@ -93,12 +90,14 @@ while True:
     
     boxes, scores, labels = openpifpaf.openpifpaf_voc.voc_pub(ret, frame)
     
+    
+    
     detections = [Detection(box = b,score = s, class_id = l)
     for b,s,l in zip(boxes, scores,labels)]
     
     # execution the tracking by motpy
     _ = tracker.step(detections = detections)
-    track_results = tracker.active_tracks(min_steps_alive= 3)
+    track_results = tracker.active_tracks(min_steps_alive= 4)
     
     # connection with serial number and trackingID
     for track_result in track_results:
@@ -112,7 +111,7 @@ while True:
         track_id_dict,
     )
     
-    print(type(debug_image))
+    #print(type(debug_image))
     
     key = cv2.waitKey(1)
     if key == 27:
