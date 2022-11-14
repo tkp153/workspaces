@@ -27,7 +27,7 @@ class Motpy:
     
 def main():
     mot = Motpy()
-    cap = cv2.VideoCapture("test.mp4")
+    cap = cv2.VideoCapture(0)
     while True:
         ret_val,frame = cap.read()
         
@@ -35,8 +35,10 @@ def main():
             bbox,score,label = pif.openpifpaf_voc.normal_pub(ret_val, frame)
             result_frame = frame
             tracks = mot.track(bbox,score,label)
+            
             for trc in tracks:
                 draw_track(result_frame,trc,thickness=1)
+                print("tracksid: " + trc.id)
             cv2.imshow('hoge',result_frame)
             
             ch = cv2.waitKey(1)
