@@ -13,7 +13,7 @@ def load_session(args):
 
     try:
         provider = ['CUDAExecutionProvider','CPUExecutionProvider']
-        session = ort.InferenceSession('/root/workspaces/YOLOX/yolox_x.onnx', providers=provider)
+        session = ort.InferenceSession('/root/workspaces/YOLOX/yolox_s.onnx', providers=provider)
     except:
         provider = ['CPUExecutionProvider']
         session = ort.InferenceSession(f'/root/workspaces/YOLOX/{args.model}.onnx', providers=provider)
@@ -31,6 +31,16 @@ def main(args):
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     frame_video = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+<<<<<<< HEAD
+=======
+    yolo_count = 0
+    openpifpaf_count = 0
+    #videodata = "atc_motpy_1_mix.mp4"
+    #fmt = cv2.VideoWriter_fourcc('m','p','4','v')
+    fps = 30.0
+    size = (1280,720)
+    #writer = cv2.VideoWriter(videodata,fmt,fps,size)
+>>>>>>> backuo
 
     start_time = time.time()
 
@@ -56,6 +66,13 @@ def main(args):
             boxes_xyxy[:, 3] = boxes[:, 1] + boxes[:, 3]/2.
             boxes_xyxy /= ratio
             dets = multiclass_nms(boxes_xyxy, scores, nms_thr=0.45, score_thr=0.1)
+<<<<<<< HEAD
+=======
+            yolo_count += 1
+            '''
+            トリミング処理
+            '''
+>>>>>>> backuo
             
             if dets is not None:
                 final_boxes, final_scores, final_cls_inds = dets[:, :4], dets[:, 4], dets[:, 5]
@@ -108,12 +125,37 @@ def main(args):
                     Ymax = height
                 #画像トリミング処理
                 cut_image = frame[int(Ymin):int(Ymax),int(Xmin):int(Xmax)]
+<<<<<<< HEAD
                 pbar.update(1)
 
     elapsed = time.time() - start_time
     print(elapsed)
 
+=======
+                
+                '''
+                Motpy Engine
+                '''
+                mot = Motpy()
+                bbox,score,label = pif.openpifpaf_voc_version_2.voc_pub_version2(success,cut_image,Xmin,Ymin)
+                motpy_frame = frame
+                tracks = mot.track(bbox,score,label)
+                
+                for trc in tracks:
+                    draw_track(motpy_frame,trc,thickness=1)
+                openpifpaf_count += 1
+                pbar.update(1)
+                
+                #writer.write(motpy_frame)
+
+    elapsed = time.time() - start_time
+    print(elapsed)
+    #writer.release()
+>>>>>>> backuo
     cap.release()
+    print("YOLOX Count :" + str(yolo_count))
+    print("OpenPifPaf_count:" + str(openpifpaf_count))
+    
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

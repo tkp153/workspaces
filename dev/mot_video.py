@@ -26,11 +26,16 @@ class Motpy:
         return tracks
     
 def main():
+<<<<<<< HEAD
     videodata = "atc_motpy_1.mp4"
     fmt = cv2.VideoWriter_fourcc('m','p','4','v')
+=======
+    videodata = "atc_motpy_1_original.mp4"
+    #fmt = cv2.VideoWriter_fourcc('m','p','4','v')
+>>>>>>> backuo
     fps = 30.0
     size = (1280,720)
-    writer = cv2.VideoWriter(videodata,fmt,fps,size)
+    #writer = cv2.VideoWriter(videodata,fmt,fps,size)
     
     mot = Motpy()
     cap = cv2.VideoCapture("atc1.webm")
@@ -45,6 +50,7 @@ def main():
             for trc in tracks:
                 draw_track(result_frame,trc,thickness=1)
                 #print("tracksid: " + trc.id)
+<<<<<<< HEAD
             #cv2.imshow('hoge',result_frame)
             writer.write(frame)
             ch = cv2.waitKey(1)
@@ -54,6 +60,15 @@ def main():
             break
     writer.release()
     cv2.destroyAllWindows()
+=======
+                #cv2.imshow('hoge',result_frame)
+                #writer.write(frame)
+                pbar.update(1)
+            else:
+                break
+        #writer.release()
+        cv2.destroyAllWindows()
+>>>>>>> backuo
         
 if __name__ == '__main__':
     main()       
