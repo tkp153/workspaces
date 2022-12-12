@@ -44,8 +44,8 @@ with tqdm(range(frame_video)):
         
             if dets is not None:
                 final_boxes, final_scores, final_cls_inds = dets[:, :4], dets[:, 4], dets[:, 5]
-                origin_img = vis(origin_img, final_boxes,       final_scores, final_cls_inds,
-                0.3, class_names=COCO_CLASSES)
+                #origin_img = vis(origin_img, final_boxes,       final_scores, final_cls_inds,
+                #0.3, class_names=COCO_CLASSES)
                 #print(final_boxes)
                 #行数カウント
                 count_Y = final_boxes.shape[0]

@@ -31,20 +31,19 @@ def main(args):
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     frame_video = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-<<<<<<< HEAD
-=======
     yolo_count = 0
     openpifpaf_count = 0
     #videodata = "atc_motpy_1_mix.mp4"
     #fmt = cv2.VideoWriter_fourcc('m','p','4','v')
     fps = 30.0
     size = (1280,720)
+    ct = 0
     #writer = cv2.VideoWriter(videodata,fmt,fps,size)
->>>>>>> backuo
+
 
     start_time = time.time()
 
-    with tqdm(range(frame_video)) as pbar:
+    with tqdm(range(int(frame_video / 100))) as pbar:
         while(cap.isOpened()):
             success, frame = cap.read()
             if not success:
@@ -66,17 +65,15 @@ def main(args):
             boxes_xyxy[:, 3] = boxes[:, 1] + boxes[:, 3]/2.
             boxes_xyxy /= ratio
             dets = multiclass_nms(boxes_xyxy, scores, nms_thr=0.45, score_thr=0.1)
-<<<<<<< HEAD
-=======
             yolo_count += 1
             '''
             トリミング処理
             '''
->>>>>>> backuo
             
             if dets is not None:
                 final_boxes, final_scores, final_cls_inds = dets[:, :4], dets[:, 4], dets[:, 5]
-                origin_img = vis(frame, final_boxes,       final_scores, final_cls_inds,0.3,class_names=COCO_CLASSES)
+                #origin_img = vis(frame, final_boxes,       final_scores, final_cls_inds,0.3,class_names=COCO_CLASSES)
+                #print(final_cls_inds)
                 
                 #行数カウント
                 Count_XAxis = final_boxes.shape[1]
@@ -88,24 +85,23 @@ def main(args):
                 data_x_max = []
                 data_y_max = []
                 i = 0
+                people_count = 0
                 for i in range(Count_YAxis):
-                    data_x_min.append(final_boxes[i][0])
-                    data_y_min.append(final_boxes[i][1])
-                    data_x_max.append(final_boxes[i][2])
-                    data_y_max.append(final_boxes[i][3])
-                    
-                # データ分析
-                Xmin = min(data_x_min)
-                Ymin = min(data_y_min)
-                Xmax = max(data_x_max)
-                Ymax = max(data_y_max)
-            
-                #データ分析
-                Xmin = min(data_x_min)
-                Ymin = min(data_y_min)
-                Xmax = max(data_x_max)
-                Ymax = max(data_y_max)
+                    if final_cls_inds[i] == 0.0:
+                        data_x_min.append(final_boxes[i][0])
+                        data_y_min.append(final_boxes[i][1])
+                        data_x_max.append(final_boxes[i][2])
+                        data_y_max.append(final_boxes[i][3])
+                        people_count += 1
                 
+                if(people_count > 0):
+                    #データ分析
+                    Xmin = min(data_x_min)
+                    Ymin = min(data_y_min)
+                    Xmax = max(data_x_max)
+                    Ymax = max(data_y_max)
+                
+
                 #　画像拡大処理
                 if(Xmin - 20 > 0):
                     Xmin -= 20
@@ -125,33 +121,15 @@ def main(args):
                     Ymax = height
                 #画像トリミング処理
                 cut_image = frame[int(Ymin):int(Ymax),int(Xmin):int(Xmax)]
-<<<<<<< HEAD
                 pbar.update(1)
 
     elapsed = time.time() - start_time
     print(elapsed)
 
-=======
-                
-                '''
-                Motpy Engine
-                '''
-                mot = Motpy()
-                bbox,score,label = pif.openpifpaf_voc_version_2.voc_pub_version2(success,cut_image,Xmin,Ymin)
-                motpy_frame = frame
-                tracks = mot.track(bbox,score,label)
-                
-                for trc in tracks:
-                    draw_track(motpy_frame,trc,thickness=1)
-                openpifpaf_count += 1
-                pbar.update(1)
-                
-                #writer.write(motpy_frame)
 
     elapsed = time.time() - start_time
     print(elapsed)
     #writer.release()
->>>>>>> backuo
     cap.release()
     print("YOLOX Count :" + str(yolo_count))
     print("OpenPifPaf_count:" + str(openpifpaf_count))
