@@ -8,16 +8,35 @@ from yolox.utils import  multiclass_nms, demo_postprocess
 from yolox.data.data_augment import preproc as preprocess
 from yolox.utils import vis
 from yolox.data.datasets import COCO_CLASSES
+from motpy import Detection,MultiObjectTracker
+from motpy.testing_viz import draw_track
+from openpifpaf.predictor import Predictor
+
+
+class Motpy:
+    def __init__(self):
+        self.tracker = MultiObjectTracker(dt = 0.1)
+        
+    def track(self,a,b,c):
+        
+        boxes = a
+        scores = b
+        labels = c
+        #outputs = [Detection(box = box[:2],score = box[3],class_id=box[4]) for box in outputs]
+        outputs = [Detection(box = b,score = s, class_id = l)
+        for b,s,l in zip(boxes, scores,labels)]
+        
+        self.tracker.step(detections=outputs)
+        
+        tracks = self.tracker.active_tracks()
+        return tracks
 
 def load_session(args):
     print(args.model)
 
-    try:
-        provider = ['CUDAExecutionProvider','CPUExecutionProvider']
-        session = ort.InferenceSession('/root/workspaces/YOLOX/yolox_s.onnx', providers=provider)
-    except:
-        provider = ['CPUExecutionProvider']
-        session = ort.InferenceSession(f'/root/workspaces/YOLOX/{args.model}.onnx', providers=provider)
+    
+    provider = ['CUDAExecutionProvider','CPUExecutionProvider']
+    session = ort.InferenceSession('/root/YOLOX/yolox_s.onnx', providers=provider)
     print(session.get_providers())
 
     if args.model in ["yolox_tiny", "yolox_nano"]:
@@ -29,7 +48,7 @@ def load_session(args):
 
 def main(args):
     session, input_size = load_session(args)
-    cap = cv2.VideoCapture("/root/atc.mp4")
+    cap = cv2.VideoCapture("/root/atc1.mp4")
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     frame_video = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -41,7 +60,8 @@ def main(args):
     size = (1280,720)
     ct = 0
     #writer = cv2.VideoWriter(videodata,fmt,fps,size)
-
+    mot = Motpy()
+    predictor = Predictor()
 
     start_time = time.time()
 
@@ -127,6 +147,15 @@ def main(args):
             #画像トリミング処理
             cut_image = frame[int(Ymin):int(Ymax),int(Xmin):int(Xmax)]
             
+            '''
+            Motpy Engine
+            '''
+            bbox,score,label = normal_pub(cut_image,Xmin,Ymin)
+            motpy_frame = frame
+            tracks = mot.track(bbox,score,label)
+
+            for trc in tracks:
+                draw_track(motpy_frame,trc,thickness=1)
 
 
     elapsed = time.time() - start_time
@@ -134,7 +163,43 @@ def main(args):
     #writer.release()
     cap.release()
 
-    
+def normal_pub( frame,xmin,ymin):
+        
+            predictor = Predictor()
+            pred, _, meta = predictor.numpy_image(frame)
+        
+            poses = []
+        
+            for p in pred:
+                pose = p.json_data()
+                poses.append(pose)
+            
+            bbox =[]
+            score =[]
+            label = []
+            for p in poses:
+                my_coco_box = p['bbox']
+                coco_box = xywh_to_xyxy(my_coco_box,xmin,ymin)
+                scores = p['score']
+                labels = p['category_id']
+        
+                bbox.append(coco_box)
+                score.append(scores)
+                label.append(labels)
+        
+            return bbox,score,label
+        
+def xywh_to_xyxy(data,xmin,ymin):
+    """convert xywh format to xyxy format"""
+    x1 = data[0] + xmin
+    y1 = data[1] + ymin
+    w  = data[2]
+    h  = data[3]
+        
+    x2 = x1 + w
+    y2 = y1 + h
+    voc = np.array([x1,y1,x2,y2])
+    return  voc             
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
