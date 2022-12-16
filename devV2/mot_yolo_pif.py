@@ -53,13 +53,10 @@ def main(args):
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     frame_video = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     yolo_count = 0
-    openpifpaf_count = 0
-    #videodata = "atc_motpy_1_mix.mp4"
-    #fmt = cv2.VideoWriter_fourcc('m','p','4','v')
-    fps = 30.0
-    size = (1280,720)
+    videodata = "atc_motpy_1_mix.mp4"
     ct = 0
-    #writer = cv2.VideoWriter(videodata,fmt,fps,size)
+    cou = 0
+    output_folder ="/root/workspaces/output_pic/frame%d.jpg"
     mot = Motpy()
     predictor = Predictor()
 
@@ -97,8 +94,6 @@ def main(args):
             
         if dets is not None:
             final_boxes, final_scores, final_cls_inds = dets[:, :4], dets[:, 4], dets[:, 5]
-            #origin_img = vis(frame, final_boxes,       final_scores, final_cls_inds,0.3,class_names=COCO_CLASSES)
-            #print(final_cls_inds)
                 
             #行数カウント
             Count_XAxis = final_boxes.shape[1]
@@ -150,17 +145,21 @@ def main(args):
             '''
             Motpy Engine
             '''
-            bbox,score,label = normal_pub(cut_image,Xmin,Ymin)
-            motpy_frame = frame
-            tracks = mot.track(bbox,score,label)
+            if (ct % 4 == 0):
+                bbox,score,label = normal_pub(cut_image,Xmin,Ymin)
+                det,motpy_frame = cap.read()
+                tracks = mot.track(bbox,score,label)
 
-            for trc in tracks:
-                draw_track(motpy_frame,trc,thickness=1)
+                for trc in tracks:
+                    print(trc.id[:5])
+                    #draw_track(motpy_frame,trc,thickness=1)
+                #cv2.imwrite(output_folder % cou , motpy_frame)
+                cou += 1
+            ct += 1
 
 
     elapsed = time.time() - start_time
     print(elapsed)
-    #writer.release()
     cap.release()
 
 def normal_pub( frame,xmin,ymin):
